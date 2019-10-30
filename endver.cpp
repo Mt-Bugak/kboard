@@ -20,12 +20,16 @@ unsigned long cur = 0;
 unsigned long pre = 0;
 bool LLed = 0;
 bool RLed = 0;
+
+float flashtime = 0.5; // [sec]
+
+
 void setup(){
     Wire.begin();
     
     init_MPU6050();
     
-    Serial.begin(19200);
+    Serial.begin(115200);
     pre = millis();
     pinMode(12, INPUT_PULLUP);
     pinMode(13, INPUT_PULLUP);
@@ -106,10 +110,10 @@ void loop(){
     }
     Serial.print(" | angle_pitch = ");Serial.print(angle_pitch);
     //Serial.print(" | angle_roll = "); Serial.print(angle_roll);
-    //Serial.print(" | angle_yaw = "); Serial.println(angle_yaw);
+    Serial.print(" | angle_yaw = "); Serial.print(angle_yaw);
 
     if(digitalRead(12)==0&&digitalRead(13)==0){ //Switch L
-        if(cur - pre > 1000){
+        if(cur - pre > flashtime*1000){
             pre=cur;
             if (LLed==0) LLed = 1;
             else LLed = 0;
@@ -117,7 +121,7 @@ void loop(){
     }
     
     else if(digitalRead(12)==0&&digitalRead(13)==1){ //Switch N
-        if(cur - pre > 1000){
+        if(cur - pre > flashtime*1000){
             pre=cur;
             if(angle_pitch>3){ //Sensor R
                 LLed = 0;
@@ -137,7 +141,7 @@ void loop(){
     }
     
     else if(digitalRead(12)==1&&digitalRead(13)==1){ //Switch R
-        if(cur - pre > 1000){
+        if(cur - pre > flashtime*1000){
             pre=cur;
             if (RLed==0) RLed = 1;
             else RLed = 0;
@@ -149,8 +153,8 @@ void loop(){
     Serial.print(" | RLed = ");Serial.println(RLed);
     
     // Sampling Timer
-    while(micros() - sampling_timer < 4000); //
-    sampling_timer = micros(); //Reset the sampling timer  
+    //while(micros() - sampling_timer < 100000); //
+    //sampling_timer = micros(); //Reset the sampling timer  
 }
 
 void init_MPU6050(){
