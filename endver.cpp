@@ -22,7 +22,7 @@ bool LLed = 0;
 bool RLed = 0;
 
 float flashtime = 0.5; // [sec]
-
+float fitchlimit = 4;
 
 void setup(){
     Wire.begin();
@@ -123,12 +123,12 @@ void loop(){
     else if(digitalRead(12)==0&&digitalRead(13)==1){ //Switch N
         if(cur - pre > flashtime*1000){
             pre=cur;
-            if(angle_pitch>3){ //Sensor R
+            if(angle_pitch>fitchlimit){ //Sensor R
                 LLed = 0;
                 if (RLed==0) RLed = 1;
                 else RLed = 0;
             }
-            else if(angle_pitch<-3){ //Sensor L
+            else if(angle_pitch<-fitchlimit){ //Sensor L
                 RLed = 0;
                 if (LLed==0) LLed = 1;
                 else LLed = 0;
