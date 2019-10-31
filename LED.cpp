@@ -118,7 +118,7 @@ void loop(){
 
     if(digitalRead(12)==0&&digitalRead(13)==0){ //Switch L
         RLed = 0;
-        digitalWrite(LEDLeft, LOW);
+        digitalWrite(LEDRight, LOW);
         if(cur - pre > flashtime*1000){
             pre=cur;
             if (LLed==0) {
