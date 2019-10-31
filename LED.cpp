@@ -20,6 +20,8 @@ unsigned long cur = 0;
 unsigned long pre = 0;
 bool LLed = 0;
 bool RLed = 0;
+int LEDLeft = 7;
+int LEDRight = 8;
 
 float flashtime = 0.5; // [sec]
 float fitchlimit = 4;
@@ -33,6 +35,8 @@ void setup(){
     pre = millis();
     pinMode(12, INPUT_PULLUP);
     pinMode(13, INPUT_PULLUP);
+    pinMode(LEDLeft, OUTPUT);
+    pinMode(LEDRight, OUTPUT);
 }
 
 void loop(){
@@ -113,10 +117,18 @@ void loop(){
     Serial.print(" | angle_yaw = "); Serial.print(angle_yaw);
 
     if(digitalRead(12)==0&&digitalRead(13)==0){ //Switch L
+        RLed = 0;
+        digitalWrite(LEDLeft, LOW);
         if(cur - pre > flashtime*1000){
             pre=cur;
-            if (LLed==0) LLed = 1;
-            else LLed = 0;
+            if (LLed==0) {
+                LLed = 1;
+                digitalWrite(LEDLeft, HIGH);
+            }
+            else {
+                LLed = 0;
+                digitalWrite(LEDLeft, LOW);
+            }
         }
     }
     
@@ -125,26 +137,50 @@ void loop(){
             pre=cur;
             if(angle_pitch>fitchlimit){ //Sensor R
                 LLed = 0;
-                if (RLed==0) RLed = 1;
-                else RLed = 0;
+                digitalWrite(LEDLeft, LOW);
+                if (RLed==0) {
+                    RLed = 1;
+                    digitalWrite(LEDRight, HIGH);
+                }
+                else {
+                    RLed = 0;
+                    digitalWrite(LEDRight, LOW);
+                }
             }
             else if(angle_pitch<-fitchlimit){ //Sensor L
                 RLed = 0;
-                if (LLed==0) LLed = 1;
-                else LLed = 0;
+                digitalWrite(LEDRight, LOW);
+                if (LLed==0) {
+                    LLed = 1;
+                    digitalWrite(LEDLeft, HIGH);
+                }
+                else {
+                    LLed = 0;
+                    digitalWrite(LEDLeft, LOW);
+                }
             }
             else{ //LED OFF
                 LLed = 0;
                 RLed = 0;
+                digitalWrite(LEDLeft, LOW);
+                digitalWrite(LEDRight, LOW);
             }
         }
     }
     
     else if(digitalRead(12)==1&&digitalRead(13)==1){ //Switch R
+        LLed = 0;
+        digitalWrite(LEDLeft, LOW);
         if(cur - pre > flashtime*1000){
             pre=cur;
-            if (RLed==0) RLed = 1;
-            else RLed = 0;
+            if (RLed==0) {
+                RLed = 1;
+                digitalWrite(LEDLeft, HIGH);
+            }
+            else {
+                RLed = 0;
+                digitalWrite(LEDRight, LOW);
+            }
         }
     }
     
