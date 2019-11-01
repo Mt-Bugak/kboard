@@ -175,7 +175,7 @@ void loop(){
             pre=cur;
             if (RLed==0) {
                 RLed = 1;
-                digitalWrite(LEDLeft, HIGH);
+                digitalWrite(LEDRight, HIGH);
             }
             else {
                 RLed = 0;
