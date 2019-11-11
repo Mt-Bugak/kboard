@@ -11,6 +11,7 @@ long sampling_timer;
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 
 int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ; // Raw data of MPU6050
+int16_t AcXi,AcYi,AcZi,GyXi,GyYi,GyZi;
 float GAcX, GAcY, GAcZ; // Convert accelerometer to gravity value
 float Cal_GyX,Cal_GyY,Cal_GyZ; // Pitch, Roll & Yaw of Gyroscope applied time factor
 float acc_pitch, acc_roll, acc_yaw; // Pitch, Roll & Yaw from Accelerometer
@@ -33,6 +34,19 @@ void setup(){
     
     Serial.begin(115200);
     pre = millis();
+    
+    Wire.beginTransmission(MPU_addr);
+    Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
+    Wire.endTransmission(false);
+    Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
+    AcXi=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)     
+    AcYi=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+    AcZi=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+    Tmp=Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
+    GyXi=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+    GyYi=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+    GyZi=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+    
     pinMode(12, INPUT_PULLUP);
     pinMode(13, INPUT_PULLUP);
     pinMode(LEDLeft, OUTPUT);
@@ -55,9 +69,12 @@ void loop(){
     GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 
     // Raw data of accelerometer corrected by offset value
-    //  AcX -= MPU6050_AXOFFSET;
-    //  AcY -= MPU6050_AYOFFSET;
-    //  AcZ -= MPU6050_AZOFFSET;
+    AcX -= AcXi;//MPU6050_AXOFFSET;
+    AcY -= AcYi;//MPU6050_AYOFFSET;
+    AcZ -= AcZi;//MPU6050_AZOFFSET;
+    GyX -= GyXi;
+    GyY -= GyYi;
+    GyZ -= GyZi;
 
     // Convert accelerometer to gravity value
     GAcX = (float) AcX / 4096.0;
