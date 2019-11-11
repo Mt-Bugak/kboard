@@ -85,7 +85,7 @@ void loop(){
     // Δt = sampling rate, τ = time constant greater than timescale of typical accelerometer noise
     angle_pitch = alpha * (((float)(GyX - MPU6050_GXOFFSET) * 0.000244140625) + angle_pitch) + (1 - alpha) * acc_pitch;
     angle_roll = alpha * (((float)(GyY - MPU6050_GYOFFSET) * 0.000244140625) + angle_roll) + (1 - alpha) * acc_roll;
-    angle_yaw += (float)(GyZ - MPU6050_GZOFFSET) * 0.000244140625; // Accelerometer doesn't have yaw value
+    angle_yaw += (float)(GyZ - MPU6050_GZOFFSET) * 0.000244140625 + 0.002; // Accelerometer doesn't have yaw value
     
     // Print raw of accelerometer & gyroscope reflected cumulative time factor
     //  Serial.print("AcX = "); Serial.print(AcX);
