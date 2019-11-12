@@ -20,12 +20,16 @@ float angle_pitch, angle_roll, angle_yaw; // Angle of Pitch, Roll, & Yaw
 float alpha = 0.96; // Complementary constant
 unsigned long cur = 0;
 unsigned long pre = 0;
+unsigned long pre2 = 0;
 bool LLed = 0;
 bool RLed = 0;
+bool trig = 0;
+bool dela = 0;
 int LEDLeft = 7;
 int LEDRight = 8;
 
 float flashtime = 0.5; // [sec]
+float inittime = 2; // [sec]
 float fitchlimit = 4;
 float fsrange = 8192.0;
 
@@ -36,6 +40,7 @@ void setup(){
     
     Serial.begin(115200);
     pre = millis();
+    pre2 = millis();
     
     Wire.beginTransmission(MPU_addr);
     Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
@@ -127,7 +132,7 @@ void loop(){
 //    Serial.print("\t | angle_pitch = ");Serial.print(angle_pitch);
 //    Serial.print("\t | angle_roll = "); Serial.println(angle_roll);
 
-     Serial.print(" | Switch = ");
+    Serial.print(" | Switch = ");
     if(digitalRead(12)==0&&digitalRead(13)==0){
       Serial.print("L");
     }
@@ -139,7 +144,21 @@ void loop(){
     }
     Serial.print(" | angle_pitch = ");Serial.print(angle_pitch);
     //Serial.print(" | angle_roll = "); Serial.print(angle_roll);
-    //Serial.print(" | angle_yaw = "); Serial.print(angle_yaw);
+    //Serial.print(" | angle = "); Serial.print(angle_yaw);
+
+    if(trig==0&&!(angle_pitch>fitchlimit||angle_pitch<-fitchlimit)){
+        dela = 1;
+    }
+    else{
+        dela = 0;
+    }
+    if(angle_pitch>fitchlimit||angle_pitch<-fitchlimit){
+        trig = 1;
+    }
+    else{
+        trig = 0;
+    }
+    if(dela==1) pre2 = cur;
 
     if(digitalRead(12)==0&&digitalRead(13)==0){ //Switch L
         RLed = 0;
@@ -160,7 +179,7 @@ void loop(){
     else if(digitalRead(12)==1&&digitalRead(13)==0){ //Switch N
         if(cur - pre > flashtime*1000){
             pre=cur;
-            if(angle_pitch>fitchlimit){ //Sensor R
+            if(angle_pitch>fitchlimit && cur - pre2 > inittime*1000){ //Sensor R
                 LLed = 0;
                 digitalWrite(LEDLeft, LOW);
                 if (RLed==0) {
@@ -172,7 +191,7 @@ void loop(){
                     digitalWrite(LEDRight, LOW);
                 }
             }
-            else if(angle_pitch<-fitchlimit){ //Sensor L
+            else if(angle_pitch<-fitchlimit && cur - pre2 > inittime*1000){ //Sensor L
                 RLed = 0;
                 digitalWrite(LEDRight, LOW);
                 if (LLed==0) {
