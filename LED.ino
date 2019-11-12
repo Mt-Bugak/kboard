@@ -6,6 +6,7 @@
 #define MPU6050_GXOFFSET 0
 #define MPU6050_GYOFFSET 0
 #define MPU6050_GZOFFSET 0
+          
 
 long sampling_timer;
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
@@ -26,6 +27,7 @@ int LEDRight = 8;
 
 float flashtime = 0.5; // [sec]
 float fitchlimit = 4;
+float fsrange = 8192.0;
 
 void setup(){
     Wire.begin();
@@ -68,41 +70,42 @@ void loop(){
     GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
     GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
 
-    // Raw data of accelerometer corrected by offset value
+    /*/ Raw data of accelerometer corrected by offset value
     AcX -= AcXi;//MPU6050_AXOFFSET;
     AcY -= AcYi;//MPU6050_AYOFFSET;
     AcZ -= AcZi;//MPU6050_AZOFFSET;
     GyX -= GyXi;
     GyY -= GyYi;
     GyZ -= GyZi;
+    /*/
 
     // Convert accelerometer to gravity value
-    GAcX = (float) AcX / 4096.0;
-    GAcY = (float) AcY / 4096.0;
-    GAcZ = (float) AcZ / 4096.0;
+    GAcX = (float) AcX / fsrange;
+    GAcY = (float) AcY / fsrange;
+    GAcZ = (float) AcZ / fsrange;
 
     // Calculate Pitch, Roll & Yaw from Accelerometer value
     // Reference are 
     // https://engineering.stackexchange.com/questions/3348/calculating-pitch-yaw-and-roll-from-mag-acc-and-gyro-data
     // https://www.dfrobot.com/wiki/index.php/How_to_Use_a_Three-Axis_Accelerometer_for_Tilt_Sensing
-    acc_pitch = atan ((GAcY - (float)MPU6050_AYOFFSET/4096.0) / sqrt(GAcX * GAcX + GAcZ * GAcZ)) * 57.29577951; // 180 / PI = 57.29577951
-    acc_roll = - atan ((GAcX - (float)MPU6050_AXOFFSET/4096.0) / sqrt(GAcY * GAcY + GAcZ * GAcZ)) * 57.29577951; 
-    //acc_yaw = atan ((GAcZ - (float)MPU6050_AZOFFSET/4096.0) / sqrt(GAcX * GAcX + GAcZ * GAcZ)) * 57.29577951;
-    acc_yaw = atan (sqrt(GAcX * GAcX + GAcZ * GAcZ) / (GAcZ - (float)MPU6050_AZOFFSET/4096.0)) * 57.29577951; 
+    acc_pitch = atan ((GAcY - (float)AcYi/fsrange) / sqrt(GAcX * GAcX + GAcZ * GAcZ)) * 57.29577951; // 180 / PI = 57.29577951
+    acc_roll = - atan ((GAcX - (float)AcXi/fsrange) / sqrt(GAcY * GAcY + GAcZ * GAcZ)) * 57.29577951; 
+    //acc_yaw = atan ((GAcZ - (float)MPU6050_AZOFFSET/fsrange) / sqrt(GAcX * GAcX + GAcZ * GAcZ)) * 57.29577951;
+    acc_yaw = atan (sqrt(GAcX * GAcX + GAcZ * GAcZ) / (GAcZ - (float)AcZi/fsrange)) * 57.29577951; 
 
     // Calculate Pitch, Roll & Yaw from Gyroscope value reflected cumulative time factor
-    Cal_GyX += (float)(GyX - MPU6050_GXOFFSET) * 0.000244140625; // 2^15 / 2000 = 16.384, 250Hz, 1 /(250Hz * 16.384LSB)
-    Cal_GyY += (float)(GyY - MPU6050_GYOFFSET) * 0.000244140625; // 2^15 / 2000 = 16.384, 250Hz, 1 /(250Hz * 16.384LSB)
-    Cal_GyZ += (float)(GyZ - MPU6050_GZOFFSET) * 0.000244140625; // 2^15 / 2000 = 16.384, 250Hz, 1 /(250Hz * 16.384LSB)
+    Cal_GyX += (float)(GyX - GyXi) * 0.000244140625; // 2^15 / 2000 = 16.384, 250Hz, 1 /(250Hz * 16.384LSB)
+    Cal_GyY += (float)(GyY - GyYi) * 0.000244140625; // 2^15 / 2000 = 16.384, 250Hz, 1 /(250Hz * 16.384LSB)
+    Cal_GyZ += (float)(GyZ - GyZi) * 0.000244140625; // 2^15 / 2000 = 16.384, 250Hz, 1 /(250Hz * 16.384LSB)
 
     // Calculate Pitch, Roll & Yaw by Complementary Filter
     // Reference is http://www.geekmomprojects.com/gyroscopes-and-accelerometers-on-a-chip/
     // Filtered Angle = α × (Gyroscope Angle) + (1 − α) × (Accelerometer Angle)     
     // where α = τ/(τ + Δt)   and   (Gyroscope Angle) = (Last Measured Filtered Angle) + ω×Δt
     // Δt = sampling rate, τ = time constant greater than timescale of typical accelerometer noise
-    angle_pitch = alpha * (((float)(GyX - MPU6050_GXOFFSET) * 0.000244140625) + angle_pitch) + (1 - alpha) * acc_pitch;
-    angle_roll = alpha * (((float)(GyY - MPU6050_GYOFFSET) * 0.000244140625) + angle_roll) + (1 - alpha) * acc_roll;
-    angle_yaw += (float)(GyZ - MPU6050_GZOFFSET) * 0.000244140625 + 0.002; // Accelerometer doesn't have yaw value
+    angle_pitch = alpha * (((float)(GyX - GyXi) * 0.000244140625) + angle_pitch) + (1 - alpha) * acc_pitch;
+    angle_roll = alpha * (((float)(GyY - GyYi) * 0.000244140625) + angle_roll) + (1 - alpha) * acc_roll;
+    angle_yaw += (float)(GyZ - GyZi) * 0.000244140625; // Accelerometer doesn't have yaw value
     
     // Print raw of accelerometer & gyroscope reflected cumulative time factor
     //  Serial.print("AcX = "); Serial.print(AcX);
@@ -119,11 +122,16 @@ void loop(){
     //  Serial.print(" | acc_yaw = "); Serial.println(acc_yaw);
 
     // Print value of Pitch, Roll & Yaw reflected Complementary Filter
-    Serial.print(" | Switch = ");
+//    Serial.print(cur);
+//    Serial.print(" | angle_yaw = "); Serial.print(angle_yaw);
+//    Serial.print("\t | angle_pitch = ");Serial.print(angle_pitch);
+//    Serial.print("\t | angle_roll = "); Serial.println(angle_roll);
+
+     Serial.print(" | Switch = ");
     if(digitalRead(12)==0&&digitalRead(13)==0){
       Serial.print("L");
     }
-    else if(digitalRead(12)==0&&digitalRead(13)==1){
+    else if(digitalRead(12)==1&&digitalRead(13)==0){
       Serial.print("N");
     }
     else if(digitalRead(12)==1&&digitalRead(13)==1){
@@ -131,7 +139,7 @@ void loop(){
     }
     Serial.print(" | angle_pitch = ");Serial.print(angle_pitch);
     //Serial.print(" | angle_roll = "); Serial.print(angle_roll);
-    Serial.print(" | angle_yaw = "); Serial.print(angle_yaw);
+    //Serial.print(" | angle_yaw = "); Serial.print(angle_yaw);
 
     if(digitalRead(12)==0&&digitalRead(13)==0){ //Switch L
         RLed = 0;
@@ -149,7 +157,7 @@ void loop(){
         }
     }
     
-    else if(digitalRead(12)==0&&digitalRead(13)==1){ //Switch N
+    else if(digitalRead(12)==1&&digitalRead(13)==0){ //Switch N
         if(cur - pre > flashtime*1000){
             pre=cur;
             if(angle_pitch>fitchlimit){ //Sensor R
@@ -208,6 +216,7 @@ void loop(){
     // Sampling Timer
     //while(micros() - sampling_timer < 100000); //
     //sampling_timer = micros(); //Reset the sampling timer  
+
 }
 
 void init_MPU6050(){
@@ -227,17 +236,17 @@ void init_MPU6050(){
     Wire.beginTransmission(MPU_addr);
     Wire.write(0x1B);  // Gyroscope Configuration register
     //Wire.write(0x00);     // FS_SEL=0, Full Scale Range = +/- 250 [degree/sec]
-    //Wire.write(0x08);     // FS_SEL=1, Full Scale Range = +/- 500 [degree/sec]
+    Wire.write(0x08);     // FS_SEL=1, Full Scale Range = +/- 500 [degree/sec]
     //Wire.write(0x10);     // FS_SEL=2, Full Scale Range = +/- 1000 [degree/sec]
-    Wire.write(0x18);     // FS_SEL=3, Full Scale Range = +/- 2000 [degree/sec]
+    //Wire.write(0x18);     // FS_SEL=3, Full Scale Range = +/- 2000 [degree/sec]
     Wire.endTransmission(true);
 
     //MPU6050 Accelerometer Configuration Setting
     Wire.beginTransmission(MPU_addr);
     Wire.write(0x1C);  // Accelerometer Configuration register
-    //Wire.write(0x00);     // AFS_SEL=0, Full Scale Range = +/- 2 [g]
+    Wire.write(0x00);     // AFS_SEL=0, Full Scale Range = +/- 2 [g]
     //Wire.write(0x08);     // AFS_SEL=1, Full Scale Range = +/- 4 [g]
-    Wire.write(0x10);     // AFS_SEL=2, Full Scale Range = +/- 8 [g]
+    //Wire.write(0x10);     // AFS_SEL=2, Full Scale Range = +/- 8 [g]
     //Wire.write(0x18);     // AFS_SEL=3, Full Scale Range = +/- 10 [g]
     Wire.endTransmission(true);
 
