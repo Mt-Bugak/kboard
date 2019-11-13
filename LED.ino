@@ -23,8 +23,6 @@ unsigned long pre = 0;
 unsigned long pre2 = 0;
 bool LLed = 0;
 bool RLed = 0;
-bool trig = 0;
-bool dela = 0;
 int LEDLeft = 7;
 int LEDRight = 8;
 
@@ -145,20 +143,8 @@ void loop(){
     Serial.print(" | angle_pitch = ");Serial.print(angle_pitch);
     //Serial.print(" | angle_roll = "); Serial.print(angle_roll);
     //Serial.print(" | angle = "); Serial.print(angle_yaw);
-
-    if(trig==0&&!(angle_pitch>fitchlimit||angle_pitch<-fitchlimit)){
-        dela = 1;
-    }
-    else{
-        dela = 0;
-    }
-    if(angle_pitch>fitchlimit||angle_pitch<-fitchlimit){
-        trig = 1;
-    }
-    else{
-        trig = 0;
-    }
-    if(dela==1) pre2 = cur;
+          
+    if(angle_pitch>-fitchlimit && angle_pitch<fitchlimit) pre2 = cur;
 
     if(digitalRead(12)==0&&digitalRead(13)==0){ //Switch L
         RLed = 0;
